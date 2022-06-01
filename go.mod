@@ -3,6 +3,7 @@ module golang.clean.architecture
 go 1.16
 
 require (
+	github.com/joho/godotenv v1.4.0 // indirect
 	github.com/labstack/echo/v4 v4.5.0
 	github.com/mattn/go-isatty v0.0.13 // indirect
 	github.com/rozturac/rmqc v0.0.0-20210824202737-53b60c43aa57

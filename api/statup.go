@@ -21,7 +21,7 @@ func Init() {
 		err    error
 	)
 
-	if config, err = configs.LoadConfig("./api", os.Getenv("ENV")); err != nil {
+	if config, err = configs.LoadConfig("./api", os.Getenv("Environment")); err != nil {
 		panic(err)
 	}
 
