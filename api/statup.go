@@ -4,13 +4,12 @@ import (
 	context2 "context"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"golang.clean.architecture/api/configs"
 	controllers_v1 "golang.clean.architecture/api/controllers/v1"
-	"golang.clean.architecture/application/users/consumers"
-	common_di "golang.clean.architecture/infrastructure/common"
 	infUsers "golang.clean.architecture/infrastructure/users"
 )
 
@@ -26,8 +25,6 @@ func Init() {
 	}
 
 	var userService = infUsers.NewUserServiceResolve(config)
-
-	BindConsumers(config)
 
 	e := echo.New()
 	e.Use(middleware.Recover())
@@ -45,11 +42,6 @@ func Init() {
 	controllers_v1.CreateGuestUser(v1, userService)
 	controllers_v1.GetUserByObjectId(v1, userService)
 
-	e.Start(":8080")
-}
-
-func BindConsumers(config configs.Config) {
-	rbt := common_di.NewRabbitMQResolve(config)
-	rbt.BindConsumer(consumers.NewUserCreatedConsumer())
-	rbt.Start()
+	port := strconv.Itoa(config.Host.Port)
+	e.Start(port)
 }

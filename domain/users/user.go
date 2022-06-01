@@ -1,31 +1,19 @@
 package users
 
 import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"log"
+
+	"github.com/google/uuid"
 	"golang.clean.architecture/domain/common"
-	"golang.clean.architecture/domain/users/events"
 )
 
 type User struct {
-	Id                primitive.ObjectID  `json:"id" bson:"_id"`
-	FirstName         string              `json:"first_name"`
-	LastName          string              `json:"last_name"`
-	UserName          string              `json:"user_name"`
-	EncryptedPassword *EncryptedPassword  `json:"encrypted_password"`
-	Roles             []*UserRole         `json:"roles"`
-	domainEvents      []common.IBaseEvent `json:"domain_events"`
-}
-
-func (u *User) ClearDomainEvents() {
-	u.domainEvents = nil
-}
-
-func (u *User) GetDomainEvents() []common.IBaseEvent {
-	return u.domainEvents
-}
-
-func (u *User) AddEvent(event common.IBaseEvent) {
-	u.domainEvents = append(u.domainEvents, event)
+	Id        string      `json:"id" gorm:"column:Id;primary_key"`
+	FirstName string      `json:"first_name"`
+	LastName  string      `json:"last_name"`
+	UserName  string      `json:"username" gorm:"column:Username;index"`
+	Password  string      `json:"password"`
+	Roles     []*UserRole `json:"roles"`
 }
 
 func NewUser(firstName, lastName, username, password string) *User {
@@ -36,20 +24,19 @@ func NewUser(firstName, lastName, username, password string) *User {
 		panic(common.IsNullOrEmptyError("username"))
 	}
 
-	user = &User{
-		Id:                primitive.NewObjectID(),
-		FirstName:         firstName,
-		LastName:          lastName,
-		UserName:          username,
-		EncryptedPassword: NewEncryptedPassword(password),
+	hashedPwd, err := HashAndSalt([]byte(password))
+
+	if err != nil {
+		log.Fatalln(err)
 	}
 
-	user.AddEvent(&events.UserCreated{
-		Id:        user.Id,
+	user = &User{
+		Id:        uuid.New().String(),
 		FirstName: firstName,
 		LastName:  lastName,
 		UserName:  username,
-	})
+		Password:  hashedPwd,
+	}
 
 	return user
 }
@@ -87,9 +74,15 @@ func (u *User) AddUserRole(role *UserRole) {
 
 func (u *User) ChangePassword(oldPassword, newPassword string) {
 
-	if !u.EncryptedPassword.VerifyPassword(oldPassword) {
+	if !ComparePasswords(oldPassword, []byte(newPassword)) {
 		panic("")
 	}
 
-	u.EncryptedPassword = NewEncryptedPassword(newPassword)
+	hashedPwd, err := HashAndSalt([]byte(newPassword))
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	u.Password = hashedPwd
 }

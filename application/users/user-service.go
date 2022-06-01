@@ -3,7 +3,6 @@ package users
 import (
 	"context"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.clean.architecture/application/users/mappers"
 	"golang.clean.architecture/application/users/models"
 	"golang.clean.architecture/domain/users"
@@ -29,16 +28,11 @@ func NewUserService(repository users.IUserRepository) UserService {
 func (service userService) GetUserById(ctx context.Context, id string) (*models.NewUserModel, error) {
 
 	var (
-		user     *users.User
-		objectId primitive.ObjectID
-		err      error
+		user *users.User
+		err  error
 	)
 
-	if objectId, err = primitive.ObjectIDFromHex(id); err != nil {
-		return nil, err
-	}
-
-	if user, err = service.Repository.FindOneById(ctx, objectId); err != nil {
+	if user, err = service.Repository.FindOneById(ctx, id); err != nil {
 		return nil, err
 	}
 
@@ -89,5 +83,5 @@ func (service userService) AuthUser(ctx context.Context, username, password stri
 		return false, err
 	}
 
-	return user.EncryptedPassword.VerifyPassword(password), nil
+	return users.ComparePasswords(user.Password, []byte(password)), nil
 }
