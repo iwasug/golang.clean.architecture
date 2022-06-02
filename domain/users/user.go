@@ -1,71 +1,52 @@
 package users
 
 import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"log"
+	"time"
+
+	"github.com/google/uuid"
+	"golang.clean.architecture/application/users/models"
 	"golang.clean.architecture/domain/common"
-	"golang.clean.architecture/domain/users/events"
 )
 
 type User struct {
-	Id                primitive.ObjectID  `json:"id" bson:"_id"`
-	FirstName         string              `json:"first_name"`
-	LastName          string              `json:"last_name"`
-	UserName          string              `json:"user_name"`
-	EncryptedPassword *EncryptedPassword  `json:"encrypted_password"`
-	Roles             []*UserRole         `json:"roles"`
-	domainEvents      []common.IBaseEvent `json:"domain_events"`
+	Id        string      `gorm:"column:Id;type:uuid;primary_key"`
+	Fullname  string      `gorm:"column:Fullname"`
+	UserName  string      `gorm:"column:Username;index"`
+	Password  string      `gorm:"column:Password"`
+	Roles     []*UserRole `gorm:"foreignKey:RoleId"`
+	CreatedAt time.Time   `gorm:"column:CreatedAt"`
+	CreatedBy string      `gorm:"column:CreatedBy"`
+	UpdatedAt time.Time   `gorm:"column:UpdatedAt"`
+	UpdatedBy string      `gorm:"column:UpdatedBy"`
+	IsActive  bool        `gorm:"column:IsActive"`
 }
 
-func (u *User) ClearDomainEvents() {
-	u.domainEvents = nil
-}
-
-func (u *User) GetDomainEvents() []common.IBaseEvent {
-	return u.domainEvents
-}
-
-func (u *User) AddEvent(event common.IBaseEvent) {
-	u.domainEvents = append(u.domainEvents, event)
-}
-
-func NewUser(firstName, lastName, username, password string) *User {
+func NewUser(model *models.NewUserModel) *User {
 
 	var user *User
 
-	if common.IsNullOrEmpty(username) {
+	if common.IsNullOrEmpty(model.Username) {
 		panic(common.IsNullOrEmptyError("username"))
 	}
 
-	user = &User{
-		Id:                primitive.NewObjectID(),
-		FirstName:         firstName,
-		LastName:          lastName,
-		UserName:          username,
-		EncryptedPassword: NewEncryptedPassword(password),
+	if common.IsNullOrEmpty(model.Fullname) {
+		panic(common.IsNullOrEmptyError("fullname"))
 	}
 
-	user.AddEvent(&events.UserCreated{
-		Id:        user.Id,
-		FirstName: firstName,
-		LastName:  lastName,
-		UserName:  username,
-	})
+	hashedPwd, err := HashAndSalt([]byte(model.Password))
 
-	return user
-}
+	if err != nil {
+		log.Fatalln(err)
+	}
 
-func NewGuestUser() *User {
-
-	user := NewUser("", "", "Guest", "12345")
-	user.AddUserRole(UserRole_Guest)
-
-	return user
-}
-
-func NewAdminUser(firstName, lastName, username, password string) *User {
-
-	user := NewUser(firstName, lastName, username, password)
-	user.AddUserRole(UserRole_Admin)
+	user = &User{
+		Id:        uuid.New().String(),
+		UserName:  model.Username,
+		Password:  hashedPwd,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
 
 	return user
 }
@@ -87,9 +68,15 @@ func (u *User) AddUserRole(role *UserRole) {
 
 func (u *User) ChangePassword(oldPassword, newPassword string) {
 
-	if !u.EncryptedPassword.VerifyPassword(oldPassword) {
+	if !ComparePasswords(oldPassword, []byte(newPassword)) {
 		panic("")
 	}
 
-	u.EncryptedPassword = NewEncryptedPassword(newPassword)
+	hashedPwd, err := HashAndSalt([]byte(newPassword))
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	u.Password = hashedPwd
 }

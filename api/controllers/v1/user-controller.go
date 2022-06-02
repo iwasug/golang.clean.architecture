@@ -12,8 +12,8 @@ import (
 
 const _prefix = "/users"
 
-func CreateGuestUser(group *echo.Group, userService users.UserService) {
-	path := fmt.Sprintf("%s/GuestUser", _prefix)
+func CreateUser(group *echo.Group, userService users.UserService) {
+	path := fmt.Sprintf("%s/User", _prefix)
 	group.POST(path, func(context echo.Context) error {
 
 		var (
@@ -21,7 +21,7 @@ func CreateGuestUser(group *echo.Group, userService users.UserService) {
 			err  error
 		)
 
-		if user, err = userService.AddNewGuestUser(context2.Background()); err != nil {
+		if user, err = userService.AddNewUser(context2.Background(), user); err != nil {
 			return err
 		}
 

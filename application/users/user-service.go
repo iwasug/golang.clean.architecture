@@ -3,7 +3,6 @@ package users
 import (
 	"context"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.clean.architecture/application/users/mappers"
 	"golang.clean.architecture/application/users/models"
 	"golang.clean.architecture/domain/users"
@@ -12,8 +11,6 @@ import (
 type (
 	UserService interface {
 		AddNewUser(ctx context.Context, newUserModel *models.NewUserModel) (*models.NewUserModel, error)
-		AddNewAdminUser(ctx context.Context, newUserModel *models.NewUserModel) (*models.NewUserModel, error)
-		AddNewGuestUser(ctx context.Context) (*models.NewUserModel, error)
 		GetUserById(ctx context.Context, id string) (*models.NewUserModel, error)
 		AuthUser(ctx context.Context, username, password string) (bool, error)
 	}
@@ -29,16 +26,11 @@ func NewUserService(repository users.IUserRepository) UserService {
 func (service userService) GetUserById(ctx context.Context, id string) (*models.NewUserModel, error) {
 
 	var (
-		user     *users.User
-		objectId primitive.ObjectID
-		err      error
+		user *users.User
+		err  error
 	)
 
-	if objectId, err = primitive.ObjectIDFromHex(id); err != nil {
-		return nil, err
-	}
-
-	if user, err = service.Repository.FindOneById(ctx, objectId); err != nil {
+	if user, err = service.Repository.FindOneById(ctx, id); err != nil {
 		return nil, err
 	}
 
@@ -47,29 +39,7 @@ func (service userService) GetUserById(ctx context.Context, id string) (*models.
 
 func (service userService) AddNewUser(ctx context.Context, newUserModel *models.NewUserModel) (*models.NewUserModel, error) {
 
-	user := users.NewUser(newUserModel.FirstName, newUserModel.LastName, newUserModel.UserName, newUserModel.Password)
-
-	if err := service.Repository.Add(ctx, user); err != nil {
-		return nil, err
-	}
-
-	return mappers.MapNewUserModel(user), nil
-}
-
-func (service userService) AddNewAdminUser(ctx context.Context, newUserModel *models.NewUserModel) (*models.NewUserModel, error) {
-
-	user := users.NewAdminUser(newUserModel.FirstName, newUserModel.LastName, newUserModel.UserName, newUserModel.Password)
-
-	if err := service.Repository.Add(ctx, user); err != nil {
-		return nil, err
-	}
-
-	return mappers.MapNewUserModel(user), nil
-
-}
-
-func (service userService) AddNewGuestUser(ctx context.Context) (*models.NewUserModel, error) {
-	user := users.NewGuestUser()
+	user := users.NewUser(newUserModel)
 
 	if err := service.Repository.Add(ctx, user); err != nil {
 		return nil, err
@@ -89,5 +59,5 @@ func (service userService) AuthUser(ctx context.Context, username, password stri
 		return false, err
 	}
 
-	return user.EncryptedPassword.VerifyPassword(password), nil
+	return users.ComparePasswords(user.Password, []byte(password)), nil
 }
