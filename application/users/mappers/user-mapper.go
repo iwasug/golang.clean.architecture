@@ -7,8 +7,8 @@ import (
 
 func MapNewUserModel(user *users.User) *models.NewUserModel {
 	return &models.NewUserModel{
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		UserName:  user.UserName,
+		Fullname: user.Fullname,
+		Username: user.UserName,
+		Password: user.Password,
 	}
 }

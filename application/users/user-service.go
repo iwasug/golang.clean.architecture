@@ -11,8 +11,6 @@ import (
 type (
 	UserService interface {
 		AddNewUser(ctx context.Context, newUserModel *models.NewUserModel) (*models.NewUserModel, error)
-		AddNewAdminUser(ctx context.Context, newUserModel *models.NewUserModel) (*models.NewUserModel, error)
-		AddNewGuestUser(ctx context.Context) (*models.NewUserModel, error)
 		GetUserById(ctx context.Context, id string) (*models.NewUserModel, error)
 		AuthUser(ctx context.Context, username, password string) (bool, error)
 	}
@@ -41,29 +39,7 @@ func (service userService) GetUserById(ctx context.Context, id string) (*models.
 
 func (service userService) AddNewUser(ctx context.Context, newUserModel *models.NewUserModel) (*models.NewUserModel, error) {
 
-	user := users.NewUser(newUserModel.FirstName, newUserModel.LastName, newUserModel.UserName, newUserModel.Password)
-
-	if err := service.Repository.Add(ctx, user); err != nil {
-		return nil, err
-	}
-
-	return mappers.MapNewUserModel(user), nil
-}
-
-func (service userService) AddNewAdminUser(ctx context.Context, newUserModel *models.NewUserModel) (*models.NewUserModel, error) {
-
-	user := users.NewAdminUser(newUserModel.FirstName, newUserModel.LastName, newUserModel.UserName, newUserModel.Password)
-
-	if err := service.Repository.Add(ctx, user); err != nil {
-		return nil, err
-	}
-
-	return mappers.MapNewUserModel(user), nil
-
-}
-
-func (service userService) AddNewGuestUser(ctx context.Context) (*models.NewUserModel, error) {
-	user := users.NewGuestUser()
+	user := users.NewUser(newUserModel)
 
 	if err := service.Repository.Add(ctx, user); err != nil {
 		return nil, err

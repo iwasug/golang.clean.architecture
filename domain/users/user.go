@@ -2,29 +2,39 @@ package users
 
 import (
 	"log"
+	"time"
 
 	"github.com/google/uuid"
+	"golang.clean.architecture/application/users/models"
 	"golang.clean.architecture/domain/common"
 )
 
 type User struct {
-	Id        string      `json:"id" gorm:"column:Id;primary_key"`
-	FirstName string      `json:"first_name"`
-	LastName  string      `json:"last_name"`
-	UserName  string      `json:"username" gorm:"column:Username;index"`
-	Password  string      `json:"password"`
-	Roles     []*UserRole `json:"roles"`
+	Id        string      `gorm:"column:Id;type:uuid;primary_key"`
+	Fullname  string      `gorm:"column:Fullname"`
+	UserName  string      `gorm:"column:Username;index"`
+	Password  string      `gorm:"column:Password"`
+	Roles     []*UserRole `gorm:"foreignKey:RoleId"`
+	CreatedAt time.Time   `gorm:"column:CreatedAt"`
+	CreatedBy string      `gorm:"column:CreatedBy"`
+	UpdatedAt time.Time   `gorm:"column:UpdatedAt"`
+	UpdatedBy string      `gorm:"column:UpdatedBy"`
+	IsActive  bool        `gorm:"column:IsActive"`
 }
 
-func NewUser(firstName, lastName, username, password string) *User {
+func NewUser(model *models.NewUserModel) *User {
 
 	var user *User
 
-	if common.IsNullOrEmpty(username) {
+	if common.IsNullOrEmpty(model.Username) {
 		panic(common.IsNullOrEmptyError("username"))
 	}
 
-	hashedPwd, err := HashAndSalt([]byte(password))
+	if common.IsNullOrEmpty(model.Fullname) {
+		panic(common.IsNullOrEmptyError("fullname"))
+	}
+
+	hashedPwd, err := HashAndSalt([]byte(model.Password))
 
 	if err != nil {
 		log.Fatalln(err)
@@ -32,27 +42,11 @@ func NewUser(firstName, lastName, username, password string) *User {
 
 	user = &User{
 		Id:        uuid.New().String(),
-		FirstName: firstName,
-		LastName:  lastName,
-		UserName:  username,
+		UserName:  model.Username,
 		Password:  hashedPwd,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
-
-	return user
-}
-
-func NewGuestUser() *User {
-
-	user := NewUser("", "", "Guest", "12345")
-	user.AddUserRole(UserRole_Guest)
-
-	return user
-}
-
-func NewAdminUser(firstName, lastName, username, password string) *User {
-
-	user := NewUser(firstName, lastName, username, password)
-	user.AddUserRole(UserRole_Admin)
 
 	return user
 }

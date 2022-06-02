@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func NewPosgreSqlDb(dbUrl string) *gorm.DB {
+func NewConnectionDb(dbUrl string) *gorm.DB {
 
 	db, err := gorm.Open(postgres.Open(dbUrl), &gorm.Config{})
 
@@ -17,6 +17,7 @@ func NewPosgreSqlDb(dbUrl string) *gorm.DB {
 	}
 
 	db.AutoMigrate(&domainUsers.User{})
+	db.AutoMigrate(&domainUsers.UserRole{})
 
 	return db
 }

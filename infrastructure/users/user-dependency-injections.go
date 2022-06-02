@@ -8,7 +8,7 @@ import (
 )
 
 func NewUserRepositoryResolve(config configs.Config) domainUsers.IUserRepository {
-	return newUserRepository(persistence.NewPosgreSqlDb(config.ConnectionStrings.DefaultConnection))
+	return newUserRepository(persistence.NewConnectionDb(config.ConnectionStrings.DefaultConnection))
 }
 
 func NewUserServiceResolve(config configs.Config) appUsers.UserService {
