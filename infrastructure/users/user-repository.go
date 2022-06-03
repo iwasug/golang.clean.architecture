@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
-const _tableName = "Users"
+const _tableName = "users"
 
 type userRepository struct {
 	db *gorm.DB
@@ -19,7 +19,8 @@ func newUserRepository(db *gorm.DB) users.IUserRepository {
 
 func (repository userRepository) FindOneById(ctx context.Context, id string) (*users.User, error) {
 	var user *users.User
-	err := repository.db.Table(_tableName).Where("Id = ?", id).First(&user)
+	repository.db.First(&user, id)
+	err := repository.db.Table(_tableName).Where("'Id' = ?", id).First(&user)
 	return user, err.Error
 }
 
