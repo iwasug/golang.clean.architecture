@@ -12,7 +12,8 @@ type (
 	UserService interface {
 		AddNewUser(ctx context.Context, newUserModel *models.NewUserModel) (*models.NewUserModel, error)
 		GetUserById(ctx context.Context, id string) (*models.NewUserModel, error)
-		AuthUser(ctx context.Context, username, password string) (bool, error)
+		GetUserByUsername(ctx context.Context, username string) (*models.NewUserModel, error)
+		ComparePasswords(ctx context.Context, username, password string) (bool, error)
 	}
 	userService struct {
 		Repository users.IUserRepository
@@ -37,6 +38,20 @@ func (service userService) GetUserById(ctx context.Context, id string) (*models.
 	return mappers.MapNewUserModel(user), nil
 }
 
+func (service userService) GetUserByUsername(ctx context.Context, username string) (*models.NewUserModel, error) {
+
+	var (
+		user *users.User
+		err  error
+	)
+
+	if user, err = service.Repository.FindOneByUsername(ctx, username); err != nil {
+		return nil, err
+	}
+
+	return mappers.MapNewUserModel(user), nil
+}
+
 func (service userService) AddNewUser(ctx context.Context, newUserModel *models.NewUserModel) (*models.NewUserModel, error) {
 
 	user := users.NewUser(newUserModel)
@@ -48,16 +63,7 @@ func (service userService) AddNewUser(ctx context.Context, newUserModel *models.
 	return mappers.MapNewUserModel(user), nil
 }
 
-func (service userService) AuthUser(ctx context.Context, username, password string) (bool, error) {
+func (service userService) ComparePasswords(ctx context.Context, password string, inputPassword string) (bool, error) {
 
-	var (
-		user *users.User
-		err  error
-	)
-
-	if user, err = service.Repository.FindOneByUsername(ctx, username); err != nil {
-		return false, err
-	}
-
-	return users.ComparePasswords(user.Password, []byte(password)), nil
+	return users.ComparePasswords(password, []byte(inputPassword)), nil
 }

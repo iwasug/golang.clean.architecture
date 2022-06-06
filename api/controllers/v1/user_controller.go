@@ -2,25 +2,25 @@ package controllers_v1
 
 import (
 	context2 "context"
-	"fmt"
 	"net/http"
 
-	"github.com/labstack/echo/v4"
-	apiResult "golang.clean.architecture/api/middleware"
+	"github.com/gofiber/fiber/v2"
+	"golang.clean.architecture/api/middleware"
 	"golang.clean.architecture/application/users"
 	"golang.clean.architecture/application/users/models"
 )
 
-const _prefix = "/users"
+const _prefix = "api/v1/users"
 
-func RegisterRoute(group *echo.Group, userService users.UserService) {
+func RegisterUserRoute(group *fiber.App, userService users.UserService) {
 	CreateUser(group, userService)
 	GetUserByObjectId(group, userService)
+	UserAuth(group, userService)
 }
 
-func CreateUser(group *echo.Group, userService users.UserService) {
-	path := fmt.Sprintf("%s/User", _prefix)
-	group.POST(path, func(context echo.Context) error {
+func CreateUser(app *fiber.App, userService users.UserService) {
+	group := app.Group(_prefix)
+	group.Post("/", middleware.JWTProtected(), func(context *fiber.Ctx) error {
 
 		var (
 			user *models.NewUserModel
@@ -31,52 +31,55 @@ func CreateUser(group *echo.Group, userService users.UserService) {
 			return err
 		}
 
-		return context.JSON(http.StatusCreated, user)
+		return context.Status(http.StatusCreated).JSON(middleware.SuccessData("", user))
 	})
 }
 
-func GetUserByObjectId(group *echo.Group, userService users.UserService) {
-	path := fmt.Sprintf("%s/id/:id", _prefix)
-	group.GET(path, func(context echo.Context) error {
+func GetUserByObjectId(app *fiber.App, userService users.UserService) {
+	group := app.Group(_prefix)
+	group.Get("/:id", middleware.JWTProtected(), func(context *fiber.Ctx) error {
 
 		var (
 			user *models.NewUserModel
 			err  error
 		)
 
-		id := context.Param("id")
+		id := context.Params("id")
 		if user, err = userService.GetUserById(context2.Background(), id); err != nil {
-			return context.String(http.StatusBadRequest, err.Error())
+			return context.Status(http.StatusBadRequest).JSON(middleware.Error(err.Error()))
 		}
 
-		return context.JSON(http.StatusCreated, user)
+		return context.Status(http.StatusCreated).JSON(middleware.SuccessData("", user))
 	})
 }
 
-func UserAuth(group *echo.Group, userService users.UserService) {
-	path := fmt.Sprintf("%s/login", _prefix)
-	group.POST(path, func(context echo.Context) error {
+func UserAuth(app *fiber.App, userService users.UserService) {
+	group := app.Group(_prefix)
+	group.Post("/login", func(context *fiber.Ctx) error {
 
 		var (
-			user *models.NewUserModel
-			err  error
+			user      *models.NewUserModel
+			err       error
+			chechAuth bool
 		)
 		loginRequest := new(models.LoginModel)
-		if err = context.Bind(loginRequest); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+
+		if err = context.BodyParser(loginRequest); err != nil {
+			return context.Status(http.StatusBadRequest).JSON(middleware.Error(err.Error()))
 		}
 
-		if user, err = userService.GetUserById(context2.Background(), loginRequest.Username); err != nil {
-			return context.JSON(http.StatusNotFound, apiResult.Error(err.Error()))
+		if user, err = userService.GetUserByUsername(context2.Background(), loginRequest.Username); err != nil {
+			return context.Status(http.StatusBadRequest).JSON(middleware.Error(err.Error()))
 		}
-		// if chechAuth, err = userService.AuthUser(context2.Background(), loginRequest.Username, loginRequest.Password); err != nil {
-		// 	return context.JSON(http.StatusInternalServerError, apiResult.Error(err.Error()))
-		// }
 
-		// if chechAuth {
-		// 	tok, time, err := apiResult.generateAccessToken(user)
-		// }
+		if chechAuth, err = userService.ComparePasswords(context2.Background(), loginRequest.Username, loginRequest.Password); err != nil {
+			return context.Status(http.StatusBadRequest).JSON(middleware.Error(err.Error()))
+		}
 
-		return context.JSON(http.StatusCreated, user)
+		if chechAuth {
+
+		}
+
+		return context.Status(http.StatusOK).JSON(middleware.SuccessData("", user))
 	})
 }

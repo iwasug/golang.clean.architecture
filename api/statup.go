@@ -5,7 +5,10 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"golang.clean.architecture/api/configs"
+	controllers_v1 "golang.clean.architecture/api/controllers/v1"
 	"golang.clean.architecture/api/middleware"
+	"golang.clean.architecture/infrastructure/common/persistence"
+	infUsers "golang.clean.architecture/infrastructure/users"
 )
 
 func Init() {
@@ -16,6 +19,10 @@ func Init() {
 
 	configSetting = configs.LoadConfig()
 
+	//Auto Migration
+
+	persistence.AutoMigration(configSetting.Database)
+
 	// Define Fiber config.
 	config := configs.FiberConfig()
 
@@ -25,7 +32,7 @@ func Init() {
 	// Middlewares.
 	middleware.FiberMiddleware(app) // Register Fiber's middleware for app.
 
-	//var userService = infUsers.NewUserServiceResolve(configSetting.Database)
+	var userService = infUsers.NewUserServiceResolve(configSetting.Database)
 	// e := echo.New()
 	// e.Use(middleware.Recover())
 	// e.Use(middleware.Logger())
@@ -57,6 +64,14 @@ func Init() {
 	// //Start Api
 	// port := strconv.Itoa(config.Host.Port)
 	// e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", port)))
+
+	//Health Check
+	app.Get("/api/healthchecks/status", func(c *fiber.Ctx) error {
+		return c.SendString("API Server is running..")
+	})
+
+	//User Route
+	controllers_v1.RegisterUserRoute(app, userService)
 
 	if err := app.Listen(configSetting.ServerSetting.SERVER_URL); err != nil {
 		log.Printf("Oops... Server is not running! Reason: %v", err)
