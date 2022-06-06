@@ -1,23 +1,33 @@
 package persistence
 
 import (
+	"fmt"
 	"log"
+	"os"
+	"time"
 
-	domainUsers "golang.clean.architecture/domain/users"
+	"golang.clean.architecture/api/configs"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
-func NewConnectionDb(dbUrl string) *gorm.DB {
+func NewConnectionDb(config configs.Database) *gorm.DB {
 
-	db, err := gorm.Open(postgres.Open(dbUrl), &gorm.Config{})
+	newLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+		logger.Config{
+			SlowThreshold: time.Second, // Slow SQL threshold
+			Colorful:      false,       // Disable color
+		},
+	)
+
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable ", config.DB_HOST, config.DB_USER, config.DB_PASSWORD, config.DB_NAME, config.DB_PORT)
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: newLogger})
 
 	if err != nil {
 		log.Fatalln(err)
 	}
-
-	db.AutoMigrate(&domainUsers.User{})
-	db.AutoMigrate(&domainUsers.UserRole{})
 
 	return db
 }

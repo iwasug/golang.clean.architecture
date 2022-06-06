@@ -7,10 +7,10 @@ import (
 	"golang.clean.architecture/infrastructure/common/persistence"
 )
 
-func NewUserRepositoryResolve(config configs.Config) domainUsers.IUserRepository {
-	return newUserRepository(persistence.NewConnectionDb(config.ConnectionStrings.DefaultConnection))
+func NewUserRepositoryResolve(config configs.Database) domainUsers.IUserRepository {
+	return newUserRepository(persistence.NewConnectionDb(config))
 }
 
-func NewUserServiceResolve(config configs.Config) appUsers.UserService {
+func NewUserServiceResolve(config configs.Database) appUsers.UserService {
 	return appUsers.NewUserService(NewUserRepositoryResolve(config))
 }
