@@ -8,6 +8,7 @@ import (
 	"golang.clean.architecture/api/middleware"
 	"golang.clean.architecture/application/users"
 	"golang.clean.architecture/application/users/models"
+	"golang.clean.architecture/domain/common"
 )
 
 const _prefix = "api/v1/users"
@@ -72,14 +73,16 @@ func UserAuth(app *fiber.App, userService users.UserService) {
 			return context.Status(http.StatusBadRequest).JSON(middleware.Error(err.Error()))
 		}
 
-		if chechAuth, err = userService.ComparePasswords(context2.Background(), loginRequest.Username, loginRequest.Password); err != nil {
+		if chechAuth, err = userService.ComparePasswords(context2.Background(), user.Password, loginRequest.Password); err != nil || !chechAuth {
+			return context.Status(http.StatusBadRequest).JSON(middleware.Error("Invalid username or password"))
+		}
+
+		token, err := common.GenerateNewAccessToken(user.Id, user.Fullname)
+
+		if err != nil {
 			return context.Status(http.StatusBadRequest).JSON(middleware.Error(err.Error()))
 		}
 
-		if chechAuth {
-
-		}
-
-		return context.Status(http.StatusOK).JSON(middleware.SuccessData("", user))
+		return context.Status(http.StatusOK).JSON(middleware.SuccessData("", &models.TokenModel{AccessToken: token}))
 	})
 }

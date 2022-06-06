@@ -34,7 +34,7 @@ func NewUser(model *models.NewUserModel) *User {
 		panic(common.IsNullOrEmptyError("fullname"))
 	}
 
-	hashedPwd, err := HashAndSalt([]byte(model.Password))
+	hashedPwd, err := common.HashAndSalt([]byte(model.Password))
 
 	if err != nil {
 		log.Fatalln(err)
@@ -55,11 +55,11 @@ func NewUser(model *models.NewUserModel) *User {
 
 func (u *User) ChangePassword(oldPassword, newPassword string) {
 
-	if !ComparePasswords(oldPassword, []byte(newPassword)) {
+	if !common.ComparePasswords(oldPassword, []byte(newPassword)) {
 		panic("")
 	}
 
-	hashedPwd, err := HashAndSalt([]byte(newPassword))
+	hashedPwd, err := common.HashAndSalt([]byte(newPassword))
 
 	if err != nil {
 		log.Fatalln(err)

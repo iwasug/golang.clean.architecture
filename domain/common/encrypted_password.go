@@ -1,11 +1,10 @@
-package users
+package common
 
 import (
 	"crypto/sha256"
 	"math/rand"
 	"time"
 
-	"golang.clean.architecture/domain/common"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -19,7 +18,7 @@ type EncryptedPassword struct {
 func NewEncryptedPassword(password string) *EncryptedPassword {
 
 	if len(password) == 0 {
-		panic(common.IsNullOrEmptyError("password"))
+		panic(IsNullOrEmptyError("password"))
 	}
 
 	var (
@@ -42,7 +41,7 @@ func NewEncryptedPassword(password string) *EncryptedPassword {
 
 func (ep *EncryptedPassword) VerifyPassword(password string) bool {
 	if len(password) == 0 {
-		panic(common.IsNullOrEmptyError("password"))
+		panic(IsNullOrEmptyError("password"))
 	}
 
 	var (

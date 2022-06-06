@@ -5,6 +5,7 @@ import (
 
 	"golang.clean.architecture/application/users/mappers"
 	"golang.clean.architecture/application/users/models"
+	"golang.clean.architecture/domain/common"
 	"golang.clean.architecture/domain/users"
 )
 
@@ -65,5 +66,5 @@ func (service userService) AddNewUser(ctx context.Context, newUserModel *models.
 
 func (service userService) ComparePasswords(ctx context.Context, password string, inputPassword string) (bool, error) {
 
-	return users.ComparePasswords(password, []byte(inputPassword)), nil
+	return common.ComparePasswords(password, []byte(inputPassword)), nil
 }
